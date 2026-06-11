@@ -1,0 +1,63 @@
+{% extends 'attendance/base.html' %}
+{% block title %}Admin OTP — SmartAttend{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-icon">📱</div>
+  <h1>Admin OTP</h1>
+  <p class="subtitle">Enter the 6-digit OTP sent to <strong>+91 90431 98508</strong></p>
+
+  {% if otp_demo %}
+  <div class="alert alert-info">
+    🔔 <strong>Demo Mode OTP:</strong> <strong style="font-family:'JetBrains Mono',monospace;letter-spacing:3px">{{ otp_demo }}</strong>
+  </div>
+  {% endif %}
+
+  {% if error %}
+  <div class="alert alert-error">⚠️ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="/admin-verify-otp/" id="otpForm">
+    {% csrf_token %}
+    <input type="hidden" name="otp" id="otpHidden" />
+    <div class="form-group">
+      <label>Admin OTP</label>
+      <div class="otp-inputs" id="otpBoxes">
+        {% for i in "123456" %}
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
+        {% endfor %}
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Verify & Enter Dashboard →</button>
+    <a href="/admin-login/" style="display:block;text-align:center;margin-top:14px;font-size:0.85rem;color:var(--muted);">← Back</a>
+  </form>
+</div>
+<script>
+const boxes = document.querySelectorAll('.otp-box');
+const hidden = document.getElementById('otpHidden');
+const submitBtn = document.getElementById('submitBtn');
+boxes.forEach((box, i) => {
+  box.addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g,'');
+    if (e.target.value && i < 5) boxes[i+1].focus();
+    updateHidden();
+  });
+  box.addEventListener('keydown', e => {
+    if (e.key==='Backspace' && !box.value && i>0) boxes[i-1].focus();
+  });
+  box.addEventListener('paste', e => {
+    e.preventDefault();
+    const p = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');
+    [...p].slice(0,6).forEach((c,j)=>{ if(boxes[j]) boxes[j].value=c; });
+    updateHidden();
+    if(p.length>=6) submitBtn.disabled=false;
+  });
+});
+function updateHidden(){
+  const val=[...boxes].map(b=>b.value).join('');
+  hidden.value=val;
+  submitBtn.disabled=val.length<6;
+}
+boxes[0].focus();
+</script>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'attendance/base.html' %}
+{% block title %}Admin Login — SmartAttend{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-icon">🔐</div>
+  <h1>Admin Login</h1>
+  <p class="subtitle">Send OTP to registered admin phone number to access the dashboard.</p>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px;">
+    <div class="info-row">
+      <span class="info-label">Admin Name</span>
+      <span class="info-value" style="font-family:'Inter',sans-serif;">Sathyamoorthi.C BCA</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Section</span>
+      <span class="info-value" style="font-family:'Inter',sans-serif;">III BCA - D Section</span>
+    </div>
+    <div class="info-row" style="border:none">
+      <span class="info-label">Phone</span>
+      <span class="info-value">+91 90431 98508</span>
+    </div>
+  </div>
+
+  <form method="POST" action="/admin-login/">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Send OTP to Admin Phone →</button>
+  </form>
+  <a href="/" style="display:block;text-align:center;margin-top:14px;font-size:0.85rem;color:var(--muted);">← Student Login</a>
+</div>
+{% endblock %}

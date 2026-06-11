@@ -1,0 +1,85 @@
+{% extends 'attendance/base.html' %}
+{% block title %}Verify OTP — SmartAttend{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="steps">
+    <div class="step done"><span class="step-num">✓</span> Roll No</div>
+    <div class="step-line"></div>
+    <div class="step active"><span class="step-num">2</span> OTP</div>
+    <div class="step-line"></div>
+    <div class="step"><span class="step-num">3</span> Verify</div>
+  </div>
+
+  <div class="card-icon">📱</div>
+  <h1>Enter OTP</h1>
+  <p class="subtitle">
+    A 6-digit OTP was sent to <strong>{{ student.phone_number|slice:":3" }}*****{{ student.phone_number|slice:"-2:" }}</strong>.
+    Valid for 10 minutes.
+  </p>
+
+  {% if otp_demo %}
+  <div class="alert alert-info">
+    🔔 <strong>Demo Mode:</strong> Your OTP is <strong style="font-family:'JetBrains Mono',monospace;letter-spacing:3px">{{ otp_demo }}</strong>
+  </div>
+  {% endif %}
+
+  {% if error %}
+  <div class="alert alert-error">⚠️ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="/verify-otp/" id="otpForm">
+    {% csrf_token %}
+    <!-- Hidden real input -->
+    <input type="hidden" name="otp" id="otpHidden" />
+
+    <div class="form-group">
+      <label>One-Time Password</label>
+      <div class="otp-inputs" id="otpBoxes">
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]" />
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Verify OTP →</button>
+    <a href="/" style="display:block;text-align:center;margin-top:14px;font-size:0.85rem;color:var(--muted);">← Back</a>
+  </form>
+</div>
+
+<script>
+const boxes = document.querySelectorAll('.otp-box');
+const hidden = document.getElementById('otpHidden');
+const submitBtn = document.getElementById('submitBtn');
+
+boxes.forEach((box, i) => {
+  box.addEventListener('input', e => {
+    const v = e.target.value.replace(/\D/g, '');
+    e.target.value = v;
+    if (v && i < 5) boxes[i + 1].focus();
+    updateHidden();
+  });
+  box.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !box.value && i > 0) boxes[i - 1].focus();
+  });
+  box.addEventListener('paste', e => {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'');
+    [...paste].slice(0,6).forEach((ch, j) => { if(boxes[j]) boxes[j].value = ch; });
+    updateHidden();
+    if (paste.length >= 6) submitBtn.disabled = false;
+  });
+});
+
+function updateHidden() {
+  const val = [...boxes].map(b => b.value).join('');
+  hidden.value = val;
+  submitBtn.disabled = val.length < 6;
+}
+boxes[0].focus();
+</script>
+{% endblock %}

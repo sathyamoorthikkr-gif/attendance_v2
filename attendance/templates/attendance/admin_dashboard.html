@@ -1,0 +1,148 @@
+{% extends 'attendance/base.html' %}
+{% block title %}Admin Dashboard — SmartAttend{% endblock %}
+{% block nav_admin %}active{% endblock %}
+
+{% block content %}
+<div class="card admin-wrap" style="max-width:960px;width:100%;">
+
+  <!-- HEADER -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px;">
+    <div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Admin</div>
+      <h1 style="margin-bottom:4px;">{{ admin.name }}</h1>
+      <div style="color:var(--muted);font-size:0.88rem;">{{ admin.section }} &nbsp;|&nbsp; {{ today|date:"l, d F Y" }}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Today's Code</div>
+      <div class="daily-code-display" style="font-size:1.6rem;padding:10px 18px;letter-spacing:5px;">{{ daily_code.code }}</div>
+      <a href="/admin-logout/" style="font-size:0.78rem;color:var(--muted);text-decoration:none;display:block;margin-top:8px;">🚪 Logout</a>
+    </div>
+  </div>
+
+  <!-- COLLEGE GPS INFO -->
+  <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:1.3rem;">🏫</span>
+    <div>
+      <div style="font-size:0.82rem;font-weight:600;color:var(--accent);">College GPS Zone</div>
+      <div style="font-size:0.78rem;color:var(--muted);font-family:'JetBrains Mono',monospace;">
+        {{ college_lat }}, {{ college_lng }} — Radius: {{ allowed_radius }}m
+      </div>
+    </div>
+    <a href="https://maps.google.com/?q={{ college_lat }},{{ college_lng }}" target="_blank"
+       style="margin-left:auto;font-size:0.8rem;color:var(--accent);text-decoration:none;padding:6px 12px;border:1px solid rgba(59,130,246,0.3);border-radius:8px;">
+      📍 View Map
+    </a>
+  </div>
+
+  <!-- STATS -->
+  <div class="stat-grid" style="margin-bottom:28px;">
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--accent);">{{ total }}</div>
+      <div class="stat-label">Total Students</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--green);">{{ present_count }}</div>
+      <div class="stat-label">Present</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--red);">{{ absent_count }}</div>
+      <div class="stat-label">Absent</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  {% if total > 0 %}
+  <div style="margin-bottom:28px;">
+    <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--muted);margin-bottom:8px;">
+      <span>Attendance Rate</span>
+      <span>{{ present_count }} / {{ total }}</span>
+    </div>
+    <div style="background:var(--surface);border-radius:100px;height:8px;overflow:hidden;">
+      <div style="height:100%;background:linear-gradient(90deg,var(--green),#34d399);border-radius:100px;width:{% widthratio present_count total 100 %}%;"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- PRESENT TABLE -->
+  <h2 style="font-size:0.9rem;font-weight:700;color:var(--soft);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">✅ Present ({{ present_count }})</h2>
+  {% if today_att %}
+  <div style="overflow-x:auto;margin-bottom:28px;">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Roll No</th><th>Name</th><th>Phone</th>
+          <th>Time</th><th>Distance</th><th>GPS</th><th>Photo</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for att in today_att %}
+        {% if att.status == 'Present' %}
+        <tr>
+          <td style="color:var(--muted);font-size:0.8rem;">{{ forloop.counter }}</td>
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">{{ att.student.roll_number }}</span></td>
+          <td style="font-weight:600;">{{ att.student.name }}</td>
+          <td style="color:var(--muted);font-size:0.82rem;">{{ att.student.phone_number }}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;">{{ att.marked_at|date:"H:i" }}</td>
+          <td style="font-size:0.8rem;color:var(--green);">
+            {% if att.distance_m %}{{ att.distance_m|floatformat:0 }}m{% else %}—{% endif %}
+          </td>
+          <td>
+            {% if att.latitude %}
+            <a href="https://maps.google.com/?q={{ att.latitude }},{{ att.longitude }}" target="_blank"
+               style="color:var(--accent);font-size:0.8rem;text-decoration:none;">📍 Map</a>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if att.photo %}
+            <a href="{{ att.photo.url }}" target="_blank">
+              <img src="{{ att.photo.url }}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--border);" />
+            </a>
+            {% else %}<span style="color:var(--muted);font-size:0.78rem;">—</span>{% endif %}
+          </td>
+          <td><span class="badge badge-present">● Present</span></td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:20px;color:var(--muted);font-size:0.88rem;margin-bottom:20px;">No attendance marked yet today.</div>
+  {% endif %}
+
+  <!-- ABSENT TABLE -->
+  <h2 style="font-size:0.9rem;font-weight:700;color:var(--soft);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">❌ Absent / Not Marked</h2>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Roll No</th><th>Name</th><th>Phone</th><th>Reason</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for att in today_att %}
+        {% if att.status == 'Absent' %}
+        <tr>
+          <td style="color:var(--muted);font-size:0.8rem;">{{ forloop.counter }}</td>
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">{{ att.student.roll_number }}</span></td>
+          <td style="font-weight:600;">{{ att.student.name }}</td>
+          <td style="color:var(--muted);font-size:0.82rem;">{{ att.student.phone_number }}</td>
+          <td style="font-size:0.78rem;color:var(--red);">Outside campus</td>
+          <td><span class="badge badge-absent">● Absent</span></td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+        {% for s in not_marked %}
+        <tr>
+          <td style="color:var(--muted);font-size:0.8rem;">—</td>
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">{{ s.roll_number }}</span></td>
+          <td style="font-weight:600;">{{ s.name }}</td>
+          <td style="color:var(--muted);font-size:0.82rem;">{{ s.phone_number }}</td>
+          <td style="font-size:0.78rem;color:var(--muted);">Not marked yet</td>
+          <td><span class="badge badge-absent">● Absent</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

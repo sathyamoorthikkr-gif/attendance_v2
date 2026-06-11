@@ -1,0 +1,139 @@
+{% extends 'attendance/base.html' %}
+{% block title %}Mark Attendance — SmartAttend{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="steps">
+    <div class="step done"><span class="step-num">✓</span> Roll No</div>
+    <div class="step-line"></div>
+    <div class="step done"><span class="step-num">✓</span> OTP</div>
+    <div class="step-line"></div>
+    <div class="step active"><span class="step-num">3</span> Verify</div>
+  </div>
+
+  <div class="card-icon">✅</div>
+  <h2>Hello, {{ student.name }}</h2>
+  <p class="subtitle">Complete all 3 checks. You must be inside college campus.</p>
+
+  {% if error %}<div class="alert alert-error">⚠️ {{ error }}</div>{% endif %}
+
+  <form method="POST" action="/mark-attendance/" id="markForm">
+    {% csrf_token %}
+
+    <!-- 1. DAILY CODE -->
+    <div class="form-group">
+      <label>① Today's Daily Code</label>
+      <input type="text" name="daily_code" placeholder="Enter 6-digit code from teacher"
+             maxlength="6" inputmode="numeric" autocomplete="off" required />
+    </div>
+
+    <!-- 2. GPS -->
+    <div style="margin-bottom:18px;">
+      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">② GPS Location Check</label>
+      <div class="loc-widget" id="locWidget">
+        <span class="loc-icon">📍</span>
+        <div style="flex:1">
+          <div class="loc-status" id="locStatus">Detecting your location...</div>
+          <div class="loc-coords" id="locCoords"></div>
+          <div id="distanceInfo" style="font-size:0.78rem;margin-top:3px;"></div>
+        </div>
+        <button type="button" class="btn-cam" onclick="getLocation()" style="width:auto;padding:7px 12px;">Retry</button>
+      </div>
+      <!-- College location info -->
+      <div style="font-size:0.75rem;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:6px;">
+        🏫 College: {{ college_lat }}, {{ college_lng }} — Allowed radius: {{ allowed_radius }}m
+      </div>
+      <input type="hidden" name="latitude"  id="latitude" />
+      <input type="hidden" name="longitude" id="longitude" />
+    </div>
+
+    <!-- 3. SELFIE -->
+    <div style="margin-bottom:18px;">
+      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">③ Selfie Photo</label>
+      <div class="camera-wrap"><video id="video" autoplay playsinline></video><canvas id="canvas"></canvas></div>
+      <img id="photo-preview" alt="Captured" />
+      <div class="cam-btns">
+        <button type="button" class="btn-cam" onclick="startCamera()">📷 Open Camera</button>
+        <button type="button" class="btn-cam snap" id="snapBtn" onclick="takeSelfie()" disabled>📸 Capture</button>
+        <button type="button" class="btn-cam" id="retakeBtn" onclick="retakePhoto()" style="display:none">🔄 Retake</button>
+      </div>
+      <input type="hidden" name="photo_data" id="photo_data" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit Attendance ✓</button>
+  </form>
+</div>
+
+<script>
+const COLLEGE_LAT = {{ college_lat }};
+const COLLEGE_LNG = {{ college_lng }};
+const ALLOWED_M   = {{ allowed_radius }};
+let stream = null;
+
+window.addEventListener('load', getLocation);
+
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000, toR=Math.PI/180;
+  const dLat=(lat2-lat1)*toR, dLon=(lon2-lon1)*toR;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*toR)*Math.cos(lat2*toR)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function getLocation(){
+  const status=document.getElementById('locStatus');
+  const coords=document.getElementById('locCoords');
+  const distInfo=document.getElementById('distanceInfo');
+  status.textContent='Detecting location...';
+  status.style.color='';
+  coords.textContent='';
+  distInfo.textContent='';
+  if(!navigator.geolocation){ status.textContent='⚠️ GPS not supported'; return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude, lng=pos.coords.longitude;
+    document.getElementById('latitude').value=lat.toFixed(6);
+    document.getElementById('longitude').value=lng.toFixed(6);
+    coords.textContent=`Your location: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    const dist=haversine(lat,lng,COLLEGE_LAT,COLLEGE_LNG);
+    const inside=dist<=ALLOWED_M;
+    status.textContent = inside ? '✅ Inside college campus' : '❌ Outside college campus';
+    status.style.color  = inside ? '#10b981' : '#ef4444';
+    distInfo.textContent = `Distance from college: ${Math.round(dist)}m (Allowed: ${ALLOWED_M}m)`;
+    distInfo.style.color = inside ? '#10b981' : '#ef4444';
+  }, err=>{
+    status.textContent='⚠️ Location denied — marked Absent if not detected';
+    status.style.color='#f59e0b';
+  },{enableHighAccuracy:true,timeout:10000});
+}
+
+async function startCamera(){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+    const v=document.getElementById('video');
+    v.srcObject=stream; v.style.display='block';
+    document.getElementById('snapBtn').disabled=false;
+    document.getElementById('photo-preview').style.display='none';
+  }catch(e){ alert('Camera access denied.'); }
+}
+function takeSelfie(){
+  const v=document.getElementById('video'), c=document.getElementById('canvas');
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  const d=c.toDataURL('image/jpeg',0.85);
+  document.getElementById('photo_data').value=d;
+  document.getElementById('photo-preview').src=d;
+  document.getElementById('photo-preview').style.display='block';
+  v.style.display='none';
+  document.getElementById('retakeBtn').style.display='block';
+  document.getElementById('snapBtn').disabled=true;
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+}
+function retakePhoto(){
+  document.getElementById('photo_data').value='';
+  document.getElementById('photo-preview').style.display='none';
+  document.getElementById('retakeBtn').style.display='none';
+  document.getElementById('snapBtn').disabled=false;
+  startCamera();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'attendance/base.html' %}
+{% block title %}SmartAttend — Mark Attendance{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="steps">
+    <div class="step active">
+      <span class="step-num">1</span> Roll No
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+      <span class="step-num">2</span> OTP
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+      <span class="step-num">3</span> Verify
+    </div>
+  </div>
+
+  <div class="card-icon">🎓</div>
+  <h1>Mark Attendance</h1>
+  <p class="subtitle">Enter your roll number to receive a verification OTP on your registered phone.</p>
+
+  {% if error %}
+  <div class="alert alert-error">⚠️ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="/verify-roll/">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Roll Number</label>
+      <input type="text" name="roll_number" placeholder="e.g. 24BCA000"
+             maxlength="20" autocomplete="off" autofocus required />
+    </div>
+    <button type="submit" class="btn btn-primary">Send OTP →</button>
+  </form>
+</div>
+{% endblock %}

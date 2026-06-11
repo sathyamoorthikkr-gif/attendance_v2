@@ -1,0 +1,12 @@
+{% extends 'attendance/base.html' %}
+{% block title %}Already Marked{% endblock %}
+
+{% block content %}
+<div class="card" style="text-align:center;">
+  <div style="font-size:3rem;margin-bottom:20px;">🔒</div>
+  <h1>Already Marked</h1>
+  <p class="subtitle">Hi {{ student.name }}, your attendance for today has already been recorded.</p>
+  <div class="alert alert-info" style="text-align:left;">ℹ️ Each student can only mark attendance once per day.</div>
+  <a href="/" class="btn btn-secondary" style="text-decoration:none;display:block;text-align:center;margin-top:8px;">Back to Home</a>
+</div>
+{% endblock %}

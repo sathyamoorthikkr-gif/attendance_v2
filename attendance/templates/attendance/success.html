@@ -1,0 +1,27 @@
+{% extends 'attendance/base.html' %}
+{% block title %}Attendance Result — SmartAttend{% endblock %}
+
+{% block content %}
+<div class="card" style="text-align:center;">
+  {% if status == 'Present' %}
+    <div class="success-icon">✅</div>
+    <h1 style="color:var(--green);">Attendance Marked!</h1>
+    <p class="subtitle">You are inside college campus. Attendance recorded as <strong>Present</strong>.</p>
+    <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:12px;padding:16px;margin:20px 0 24px;">
+      <div class="info-row"><span class="info-label">Date</span><span class="info-value">{% now "d M Y" %}</span></div>
+      <div class="info-row"><span class="info-label">Time</span><span class="info-value">{% now "H:i" %}</span></div>
+      <div class="info-row" style="border:none"><span class="info-label">Status</span><span class="badge badge-present">● Present</span></div>
+    </div>
+  {% else %}
+    <div style="width:80px;height:80px;border-radius:50%;background:rgba(239,68,68,0.1);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin:0 auto 24px;animation:pop 0.5s ease;">❌</div>
+    <h1 style="color:var(--red);">Marked Absent</h1>
+    <p class="subtitle">Your GPS location does not match the college campus. Attendance recorded as <strong>Absent</strong>.</p>
+    <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:16px;margin:20px 0 24px;">
+      <div class="info-row"><span class="info-label">Date</span><span class="info-value">{% now "d M Y" %}</span></div>
+      <div class="info-row" style="border:none"><span class="info-label">Status</span><span class="badge badge-absent">● Absent</span></div>
+    </div>
+    <div class="alert alert-info" style="text-align:left;">ℹ️ You must be physically present inside college to mark attendance.</div>
+  {% endif %}
+  <a href="/" class="btn btn-secondary" style="text-decoration:none;display:block;text-align:center;">Done</a>
+</div>
+{% endblock %}
