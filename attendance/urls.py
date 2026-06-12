@@ -13,4 +13,5 @@ urlpatterns = [
     path('admin-verify-otp/',   views.admin_verify_otp, name='admin_verify_otp'),
     path('admin-logout/',       views.admin_logout,     name='admin_logout'),
     path('admin-dashboard/',    views.admin_dashboard,  name='admin_dashboard'),
+    path('export-excel/', views.export_excel, name='export_excel'),
 ]

@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
 from django.utils import timezone
 from django.contrib import messages
 import random, string, base64, math
@@ -203,3 +204,69 @@ def admin_dashboard(request):
         'college_lng'   : COLLEGE_LNG,
         'allowed_radius': ALLOWED_RADIUS_METERS,
     })
+# ================================
+# EXCEL EXPORT
+# ================================
+
+def export_excel(request):
+    if not request.session.get('admin_logged_in'):
+        return redirect('admin_login')
+
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    today = timezone.now().date()
+    admin = AdminProfile.objects.first()
+    students = Student.objects.all().order_by('roll_number')
+    today_att = {a.student_id: a for a in Attendance.objects.filter(date=today)}
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Attendance {today}"
+
+    ws.merge_cells('A1:G1')
+    ws['A1'] = f"SmartAttend — {admin.section if admin else ''}"
+    ws['A1'].font = Font(bold=True, size=14)
+    ws['A1'].alignment = Alignment(horizontal='center')
+
+    headers = ['#', 'Roll No', 'Name', 'Phone', 'Status', 'Time', 'Distance']
+    ws.append([])
+    ws.append(headers)
+    header_fill = PatternFill(start_color="3B82F6", end_color="3B82F6", fill_type="solid")
+    for cell in ws[3]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    for idx, s in enumerate(students, start=1):
+        att = today_att.get(s.id)
+        if att:
+            status = att.status
+            time_str = att.marked_at.strftime('%H:%M:%S')
+            dist = f"{att.distance_m:.0f}" if att.distance_m else "-"
+        else:
+            status = "Absent"
+            time_str = "-"
+            dist = "-"
+
+        row = [idx, s.roll_number, s.name, s.phone_number, status, time_str, dist]
+        ws.append(row)
+        status_cell = ws.cell(row=ws.max_row, column=5)
+        if status == 'Present':
+            status_cell.font = Font(color="10B981", bold=True)
+        else:
+            status_cell.font = Font(color="EF4444", bold=True)
+
+    widths = [4, 14, 22, 16, 10, 12, 12]
+    for i, w in enumerate(widths, start=1):
+        ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
+
+    ws.append([])
+    ws.append(['', '', '', '', 'Total', '', students.count()])
+    ws.append(['', '', '', '', 'Present', '', len(today_att)])
+    ws.append(['', '', '', '', 'Absent', '', students.count() - len(today_att)])
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="attendance_{today}.xlsx"'
+    wb.save(response)
+    return response
