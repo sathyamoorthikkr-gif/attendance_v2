@@ -257,9 +257,10 @@ def export_excel(request):
         else:
             status_cell.font = Font(color="EF4444", bold=True)
 
+    from openpyxl.utils import get_column_letter
     widths = [4, 14, 22, 16, 10, 12, 12]
     for i, w in enumerate(widths, start=1):
-        ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
+        ws.column_dimensions[get_column_letter(i)].width = w
 
     ws.append([])
     ws.append(['', '', '', '', 'Total', '', students.count()])
